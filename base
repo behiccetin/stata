@@ -1,0 +1,718 @@
+*Baslamadan once hafizadaki herseyi siliyoruz
+clear all 
+
+*Working directoryi kontrol etmek için 
+*Mevcut working directoryi gösterir
+pwd 
+
+*Burada yani working directoryide ne oldugunu 
+*görmek için 
+dir
+ls
+
+*Working directoryi degistirmek için
+cd "C:\Users\Belke\Desktop\STATA EKONOMETRİ DERSİ"
+
+*Yazdigimiz herseyin kaydini es anli olarak tutabiliriz
+*replace degistirir
+log using  "C:\Users\Belke\Desktop\STATA EKONOMETRİ DERSİ\Belke-25Aralık.log", replace
+*append üstüne yazar
+log using "C:\Users\Belke\Google Drive\0-STATA-PANEL VERİ\MURAT BELKE DO FILE\BELKE.log", append
+*Do file sonunda log kapatilmaliir
+capture log close
+*or 
+log close
+
+*eger haf1zan1n artmasini istiyorsak 
+*1 gigabyte a arttirmak icin 
+set mem 1g
+
+*Excel verisini okutma
+import excel "C:\Users\Belke\Desktop\STATA EKONOMETRİ DERSİ\excel-deneme.xlsx", sheet("Sayfa1") firstrow clear
+
+* csv ve txt dosyası için
+import delimited "C:\Users\Belke\Desktop\STATA EKONOMETRİ DERSİ\csv-deneme.csv", clear
+
+import delimited "C:\Users\Belke\Desktop\STATA EKONOMETRİ DERSİ\csv-deneme-demo2.csv", clear
+
+import delimited "C:\Users\Belke\Desktop\STATA EKONOMETRİ DERSİ\demo2.csv", delimiter(comma) clear 
+
+* txt dosyası için 
+import delimited "C:\Users\Belke\Desktop\STATA EKONOMETRİ DERSİ\txt-deneme.txt", clear
+
+*veriyi kaydetmek için
+save "C:\Users\Belke\Desktop\STATA EKONOMETRİ DERSİ\deneme.dta", replace
+
+*artik working directorydeki dta seklindeki veriyi 
+*kolayca cagirabiliriz
+use "C:\Users\Belke\Desktop\STATA EKONOMETRİ DERSİ\deneme.dta", replace
+
+*baum s.7
+*internet üzerinden veriyi indirmek icin
+use http://www.stata-press.com/data/r8/census2, clear
+webuse census2.dta, clear
+*keep tutma 
+keep if region < 3  // =="N Cntrl" | region == "NE"
+*ya da drop ile düsürülebilir
+webuse census2.dta, clear
+drop if region > 2 
+
+
+
+*BAUM CHAPTER 2
+* create extract for Chapter 2 revised
+*scheme description: sj
+*sj düzenine göre;
+// background yani arkaplan beyaz-white
+//foreground yani ön plan monokrom yani tek renkli  
+set scheme sj
+/* set more on; which is the default, 
+tells Stata to wait until you press a key before continuing
+when a more message is displayed.
+set more off; tells Stata not to pause or display the more message
+*/
+set more off
+*veriyi internetten indiriyoruz
+use http://www.stata-press.com/data/r8/census2, clear
+*BÖLGE KODU 3TEN KÜÇÜKSE TUT DİYORUZ
+keep if region < 3  // =="N Cntrl" | region == "NE"
+*Bu bir LOOP
+*FOREACH LİSTEDEKİ HERBİR DEĞİŞKEN İÇİN ANLAMINDA
+*BU DÖNGÜ DEĞİŞKENLERİN 1000'E BÖLÜNMESİNİ GÖSTERİYO
+foreach v of varlist pop* marriage divorce {
+replace `v' = `v'/1000
+format `v' %8.1f
+}
+*DEĞİŞKEN İSİMLERİNİ DEĞİŞTİRMEK 
+*rename değişkenin önceki ismi sonra yeni ismi
+rename popurban popurb
+rename marriage marr
+rename divorce divr
+
+* encode -- Encode string into numeric and vice versa
+*encode region, gen(reg12)
+* drop region
+
+*değişkenkeri etiketlemek için
+label var state "State"
+label var pop "1980 Population, '000"
+label var popurb "1980 Urban population, '000"
+label var medage "Median age, years"
+label var drate "Death rate per 10,000"
+label var marr "Marriages, '000"
+label var divr "Divorces, '000"
+
+*VERİSETİNİ ETİKETLEMEK İÇİN
+* label var reg "Census region"
+label data "1980 Census data for NE and NC states"
+
+*compress attempts to reduce the amount of memory used by your data.
+*compress — Compress data in memory
+compress
+
+keep state region pop popurb medage marr divr 
+
+*List values of variables
+*değişkenlerin değerlerini görmek için
+list, sep(0)
+list, sep(7)
+
+/*separator(#) specifies how often separator lines should be drawn between rows. 
+The default is separator(5), meaning every 5 observations. 
+You may specify separator(0) to suppress separators altogether.*/
+
+*tabloda görüldügü gibi stata harfe duyarlidir
+*bu nedenle STATE, State, state üç farklı değişkendir 
+*bu nedenle mümkün oldugunca küçük isimler verilmeli 
+
+*DEĞİŞKEN TİPLERİ 
+*Statada; temel olarak iki değişken tipi var; numerik ve string
+*String statada 1-244 karakter arasında değer almaktadır.
+*numerik değişkenler en küçüğü byte-en büyüğü float
+*default olarak float olarak kaydedilir
+*değişkenin değeri -127 ile 100 arasındaysa byte 
+* -32,767 ile 32,740 arasındaysa integer (int) vs...
+*eğer değişken 6 karakter olarak saklanabiliyorsa 20 karakter saklanması yerine
+*compress komutu ile sıkıştırmak gerekmektedir. 
+*compress ile kullanılan hafıza düşmekte ve 
+*double olan longa ; int olan bytea dönüşmektedir. float da int veya byte olmaktadır. 
+
+
+*DEĞİŞİKLİK YAPTIĞI VERİSETİNİ KAYDEDİYORUZ 
+save census2c-demo,replace
+
+/* outsheet has been superseded by import delimited.  
+outsheet continues to work but, as of Stata 13, is no longer an official part of Stata.  
+This is the original help file, which we will no longer update, 
+so some links may no longer work.*/
+
+**outsheet -- Write spreadsheet-style dataset
+*tablo stilinde veriyi yazdırmak
+outsheet using census2c-demo, replace
+
+*describe; verisetinin içeriğini ve herbir verinin data tipini göstermektedir. 
+describe
+des
+*VERİ DÖNÜŞÜMÜNDE KULLANDIĞIMIZ İKİ KOD
+*generate ve replace
+*generate; kullanımda olmayan yeni isimle yeni değişken yaratırken 
+*replace mevcut değişkeni modifiye eder. 
+
+generate urbanized=popurb/pop
+*sum özet istatistikleri göstermektedir. 
+summarize urbanized 
+summarize urbanized, detail
+*eğer urbanized mevcut ve bunu değilştirmek istiyorsak 
+replace urbanized=100*urbanized 
+summarize urbanized
+
+*verileri belli bir düzene göre sıralamak için sort komutu kullanılmaktadır. 
+*eğer sort komutu tek bir değişken ismi içeriyorsa; 
+*stata veriyi bu değişkenin artan sırasında sıralayacak; 
+*numerik veya string olmasına bakmayacaktır. 
+
+*EĞER İKİ veya daha fazla değişken listesi belirtilirse;
+*sort yazmak ilk değişkene göre sıralama yapmaktadıır. 
+*ancak daha sonra ilk değişken için eşit değerlere sahip değerleri 
+*ikinci değişkene göre sıralamaktadır. 
+
+*gsort ise veriyi azalan veya artan dizide sıralayabilmektedir. 
+* - işareti azalan + işareti ise artan sıralama sağlamaktadır. 
+
+*örnek olarak bölgeleri nüfusa göre azalan şekilde sıralayabiliriz
+gsort region -pop
+gsort region pop
+
+list region state pop, sepby(region) /*bölgelere göre ayırarak sıraladı*/
+
+* if EXP ve in RANGE STATA KOMUTLARI; 
+*GÖZLEMLERİ ALTKÜMEYE SINIRLAMAYA YARAMAKTADIR. 
+*EN KÜÇÜK NÜFUSA SAHİP 5 ABD EYALETİNİ LİSTELEMEK İÇİN; 
+*NÜFUSA GÖRE SIRALADIK 
+sort pop
+* BURADA in 1/5; ilk 5 gözlemi yani en küçük nüfasa sahip ilk 5 eyaleti 
+list state region pop in 1/5
+* in -5/1 ise son en büyük nüfusa sahip 5 eyaleti belirtmektedir. 
+list state region pop in -5/l
+*burada artan sırada verilmektedir. 
+*bunu azalan sırada görebilmek için 
+*önce nüfusa göre azalan sıralıyoruz
+*sonra ilk 5 gözlemi istiyoruz
+gsort -pop
+list state region pop in 1/5
+
+*Bazı mantıksal koşullar ile sınırlamak için IF komutu kullanıyoruz. 
+*öreğin medage değişkeninden yeni bir medagel değişkeni oluşturucaz 
+*ve bu değişken yalnızca nüfusu 5 milyondan büyük eyaletleri gösterecek. 
+sort pop
+generate medagell = medage if pop > 5000
+sort state
+list state region pop medagel, sep(0)
+
+*ikisi aynı şeyi göstermektedir. 
+summarize medagel 
+summarize medage if pop > 5000
+
+*Birçok çalışma 0-1 değerini alan gösterge yada kukla değişken kullanmaktadır. 
+*Bu değişken belirtilen koşulun sağlanıp sağlanmamasına göre ikili değer (binary variable) almaktadır. 
+generate smallpop = 0
+replace smallpop = 1 if pop <= 5000
+
+generate largepop = 0
+replace largepop = 1 if pop > 5000
+
+list state pop smallpop largepop, sep(0)
+
+*TEK KODDA YAPMAK İÇİN 
+drop smallpop largepop
+
+gen smallpop2 = (pop <= 5000)
+generate largepop = (pop > 5000)
+gen smallpop3 = (pop <= 5000)
+
+*EĞERKİ VERİDE BOŞLUK (MISSING VALUE) VARSA 
+drop smallpop largepop
+generate smallpop4 = (pop <= 5000) if pop < .
+generate largepop = (pop > 5000) if pop < .
+
+/* BİR BAŞKA ÖRNEK 
+generate dumsex = 0
+replace dumsex = 1 if sex==2
+replace dumsex = . if missing(sex)
+
+***or
+* generate dumsex = (sex==2) if !missing(sex)
+
+generate dummarried = 0
+replace dummarried = 1 if mastat==1
+replace dummarried = . if missing(mastat)*/
+
+* summarize medage marr divr if smallpop
+* summarize medage marr divr if largepop
+
+*HER BİR BÖLGE İÇİN ÖZET İSTATİSTİKLERİ
+*ÇİFT EŞİTTİR İŞARETİNE DİKKAT !!! 
+summarize medage marr divr if region==1
+summarize medage marr divr if region==2
+
+*İF YERİNE BY VARLİST KULLANIMI 
+*YANİ HERBİR BÖLGEYİ AYRI AYRI YAPMAK YERİNE TEK BİR KODDA BÖLGEYE GÖRE AYIRARAK YAPABİLİRİZ. 
+*BÖLGEYE GÖRE SIRALA VE ÖZET İSTATİSTİKLERİNİ GÖSTER
+by region, sort: summarize medage marr divr
+
+*tabstat -- Compact table of summary statistics
+*bölgeye göre medage değişkeninin
+*N; GÖZLEM SAYISI
+*MEAN; ORTALAMA 
+*SD; STANDART SAPMA 
+*MİN MİNUMUM VE MAX MAXIMUM DEĞERLERİ. 
+tabstat medage, by(region) statistics(N mean median sd min max) 
+tabstat medage,  statistics(N mean median sd min max) 
+*small pop ve largepop değişkenini tek bir kateorik değişkene dönüştürerek 
+*değişkenin 1 değeri small, 2 değeri büyük eyaletleri göstermektedir. 
+*bu durumda; 
+generate popsize = smallpop + 2*largepop
+*herbir bölgeyi popsize a göre ayırıp özet istatistiklerini elde ediyo
+by region popsize, sort: summarize medage marr divr
+
+
+
+*VERİSETİNİ ETİKETLEMEK İÇİN
+label data "1980 Census data for NE and NC states"
+*yenisi eskisinin üstüne yazılmakta
+
+*değişkenerin etiketleri
+label variable urbanized "Population in urban areas, %"
+label variable smallpop "States with <= 5 million pop, 1980"
+label variable largepop "States with > 5 million pop, 1980"
+label variable popsize "Population size code"
+describe pop smallpop largepop popsize urbanized
+
+*şimdi value labela bakalım
+describe region
+*region byte (integer), 
+*variable label ise census region (nüfus bölgesi)
+*value labelı ise cenreg 
+*region değişkeninin value labelı cenreg
+*şimdi cenreg labelı listeleyip aldığı değerlere bakıyoruz
+*cenreg 4 nüfus bölgesi için kodlar içermektedir. 
+label list cenreg
+
+*Popsize için bakarsak; 
+label define popsize 1 "<= 5 million" 2 "> 5 million"
+label values popsize popsize
+describe popsize
+
+*popsize'ın herbir değeri için medage değişkeninin ortalamalarına bakmak için
+by popsize, sort: summarize medage
+
+label data "1980 US Census data with population size indicators"
+
+
+*Note kodu datasetine veya tekil değişkenlere not eklemenizi sağlar. 
+notes: Subset of Census data, prepared on TS for Chapter 2 
+notes medagel: median age for large states only
+notes popsize: variable separating states by population size
+notes popsize: value label popsize defined for this variable
+describe
+notes
+
+*veri setinde aynı isim varsa 
+*örneğin *pop popla biten tüm değişken isimlerini kapsar; 
+* *pop dediğimizde pop, smallpop, largepop belirtilmektedir. 
+*bunun terside doğrudur; pop* dediğimizde de pop, popsize gibi pop ile başlayan tüm değişkenleri kapsar. 
+
+*DROP VE KEEP KOMUTLARI 
+*drop düşürmekte keep ise tutmaktadır. 
+* drop varlist
+* keep varlst 
+* if ve in opsiyonlarınla da kullanılabilmektedir. 
+* drop if exp 
+* drop in range 
+* keep if exp 
+* drop in range 
+
+*örneğin 
+drop if largepop
+*yada aynı anlamda
+keep if smallpop
+
+*RENAME; DEĞİŞKENİ YENİDEN ADLANDIRMAKTADIR
+*rename old_varname new_varname 
+*rename jan* *: Removes prefix jan. (ÖN EK)
+*rename *jan *: Removes suffix jan. (SON EK)
+
+*ÖN EKE SAHİP BİRÇOK DEĞİŞKENİN İSMİNİ DEĞİŞTİRMEK İÇİN; 
+* örneğin income80, income81 isimlerini inc80, inc 81 yapmak için
+renpfix income inc 
+
+*DAHA GENEL ÇÖZÜM İÇİN COX VE WEESIE (2005) RENVARS KOMUTUNA BAKINIZ
+
+*SAVE KOMUTU 
+*veri setini saklamak için 
+*save filename 
+*orjinali ile değiştirmek için sonuna replace opsiyonu 
+*save filename, replace 
+*veri setini text dosyası olarak saklamak için outsheet komutunu kullanın. 
+
+*veri setlerini okutmak için statadaki komutlar; 
+*insheet, infile, infix 
+
+*veriseti virgül veya boşlukla sınırlandırılmış-ayrılmış ise insheet komutu en iyisi. 
+*eğer veri seti sınırlandırılmamış ise infile yada infix  
+
+*COMMON DATA TRANSFORMATION 
+
+* COND () FONKSİYONU 
+*EĞER MANTIKSAL İFADEMİZ C DOĞRUYSA SONUÇ DEĞİŞKENİNİ Xt ve yanlışsa Xf olarak kodlamak için
+* cond(C, Xt, Xf) fonksiyonu kullanabiliriz. 
+*eyaletleri net evlilik oranının  (marriages/divorce) 
+*2'den büyük ve küçük olmasınagöre ayırmak isteyelim
+* 1 ve 2 değerini alan netmarr2x değişkenini tanımlayalım
+generate netmarr = marr/divr
+summarize netmarr
+
+generate netmarr2x = cond(marr/divr > 2, 1, 2)
+label define netmarr2xc 1 "marr > 2 divr" 2 "marr <= 2 divr"
+label values netmarr2x netmarr2xc
+tabstat pop medage, by(netmarr2x)
+
+*Kesikli ve Sürekli değişkenlerin yeniden kodlanması
+
+*mevcut bir kesikli değişkenin kodlaması temelinde yeni bir değişken oluşturmak 
+replace newcode=5 if oldcode==2
+replace newcode=8 if oldcode==3
+replace newcode=12 if oldcode==5 | oldcode==6 | oldcode==7
+*BU ŞEKİLDE YAPMAK ETKİNSİZ.
+*RECODE DAHA ETKİN olarak tüm verisetine uygulanabilmektedir.   
+
+*The logical operators are & (and), | (or), and ! (not). 
+*The relational operators are > (greater than), < (less than), >= (greater than or equal), 
+*<= (less than or equal), == (equal), and != (not equal).
+
+recode oldcode (2=5) (3=8) (5/7=12), generate(newcode)
+*yukardaki dönüşümü sağlar. 
+
+*sürekli değişkenleri yeni bir kategorik değişkene dönüştürmek için
+*generate ve recode birlikte kullanılabilir. 
+
+generate medagebrack = recode(medage,28,29,30,31,32,33)
+*buna göre medage 28'e kadar olanlar 28 olarak 
+*28den büyük 29dan küçük veya eşit olanlar 29 olarak kodlanmıştır...
+*tabulate yada tab kodu frekans tablosu
+tabulate medagebrack
+
+*-histogramı; 
+*Histogram, gruplandırılmış bir veri dağılımının sütun grafiğiyle gösterimidir. 
+*Diğer bir ifadeyle, tekrarlı sayılardan oluşan verilerin, 
+*uygulanan işlemlerden sonra önce tabloya, 
+*tablodan yararlanarak grafiğe aktarılması, 
+*yani veri gruplarının grafiğinin dikdörtgen sütunlar halinde gösterilmesidir.
+
+histogram medagebrack, discrete frequency ///
+lcolor(black) fcolor(gs15) addlabels ///
+addlabopts(mlabposition(6)) xtitle(Upper limits of median age) ///
+title(Northeast and North Central States: Median Age) 
+
+*diger programlarin eksik verileri farklı formatta olabilmekte
+*stata mvdecode ile bunu donusturebiliriz. 
+*mvdecode
+*mvdecode _all, mv(-9/-1)
+*ornek
+/*
+sysuse auto
+mvencode _all, mv(999)
+mvdecode _all, mv(999) */
+
+*string to numeric coversation and vice versa 
+destring varname, replace
+*hepsi icin
+destring _all, replace
+
+*eger veride string-karakter varsa 
+* encode kullanılmalı
+*ancak tamamen numerikse encode uygulanmamalı!!!
+* çünkü encode değişkenin herbir farklı değeri için değer etkiketi oluşturmaktadır. 
+
+*değişkenin Encode edilmesine neden ihtiya. duyuyorum?
+*census2a verisetinde region yani bölge tanıtıcısı region'u göz önünde bulunduralım 
+use http://www.stata-press.com/data/imeus/census2a, clear
+describe region
+tabulate region
+encode region, generate(cenreg)
+des cenreg
+*olusturulan yeni cenreg değişkeni 1,2,3,4 değerlerini almaktadır artık. 
+*artık bu cenreg değişkeniyle analiz yapabilirsiniz
+
+*tersine çevirmek için string kodu...
+
+
+*HANDLING DATES
+*statada belli bir zaman değişkeni tipi yok
+*eğer ay yıl ve gün değerleri farklı değerler olarak kodlanmışsa, mon, day, year
+*mdy()fonksiyonu kullanılmalıdır. 
+help mdy 
+/*Function
+
+    mdy(M,D,Y)
+       Description:  the e_d date (days since 01jan1960) corresponding to M, D, Y
+       Domain M:     integers 1 to 12
+       Domain D:     integers 1 to 31
+       Domain Y:     integers 0100 to 9999 (but probably 1800 to 2100)
+       Range:        %td dates 01jan0100 to 31dec9999 (integers -679,350 to 2,936,549) or missing */
+
+	   
+*eğer zaman string olarak (7/27/2005; 27july2005; 2005-07-27 yada 27.7.2005 gibi)
+*date() fonksiyonu kullanarak tam sayı şekline çevrilir
+help date 
+/*Function
+
+    date(s1,s2[,Y])
+       Description:  the e_d date (days since 01jan1960) corresponding to s1 based on s2 and Y
+
+                     s1 contains the date, recorded as a string, in virtually any format.  Months can be spelled out, abbreviated (to three characters), or indicated as numbers; years can
+                     include or exclude the century; blanks and punctuation are allowed.
+
+                     s2 is any permutation of M, D, and [##]Y, with their order defining the order that month, day, and year occur in s1.  ##, if specified, indicates the default century
+                     for two-digit years in s1.  For instance, s2="MD19Y" would translate s1="11/15/91" as 15nov1991.
+
+                     Y provides an alternate way of handling two-digit years.  When a two-digit year is encountered, the largest year, topyear, that does not exceed Y is returned.
+
+                            date("1/15/08","MDY",1999) = 15jan1908
+                            date("1/15/08","MDY",2019) = 15jan2008
+
+                            date("1/15/51","MDY",2000) = 15jan1951
+                            date("1/15/50","MDY",2000) = 15jan1950
+                            date("1/15/49","MDY",2000) = 15jan1949
+
+                            date("1/15/01","MDY",2050) = 15jan2001
+                            date("1/15/00","MDY",2050) = 15jan2000
+
+                     If neither ## nor Y is specified, date() returns missing when it encounters a two-digit year. See Working with two-digit years in [D] datetime translation for more
+                     information.
+       Domain s1:    strings
+       Domain s2:    strings
+       Domain Y:     integers 1000 to 9998 (but probably 2001 to 2099)
+       Range:        %td dates 01jan0100 to 31dec9999 (integers -679,350 to 2,936,549) or missing
+
+    daily(s1,s2[,Y])
+       Description:  a synonym for date(s1,s2[,Y])*/
+
+* date yada mdy fonksiyonu kullanıldıktan sonra 
+* format komutuyla veri formatı oluşturulur
+* format varname
+
+/*
+weekly date %tw
+monthly date %tm
+quarterly date %tq
+half-yearly date %th
+yearly date %ty
+
+*örnek
+format mytimevar %tc
+has the same effect as typing
+format mytimevar %tcDDmonCCYY_HH:MM:SS
+Format %tcDDmonCCYY HH:MM:SS is interpreted as 
+%; all formats start with %
+t; date time format
+c; variable coded in miliseconds
+DDmonCCYY HH:MM:SS; formatting codes how to display value */
+
+*STRING TO DATE 
+*ÖRNEK
+*FORMAT DATE
+use http://www.stata.com/users/youtube/rawdata.dta, clear
+des dob
+list dob in 1/10
+*ekrandan yapmak için
+*DATA>Create or Change Data>Create a new variable
+*variable name isim ver
+*specify a value or an expression da create tıkla
+*functionsdan date and time tıkla
+*date 'e çift tıkla 
+*date(dob,"MDY") yaz ok tıkla
+generate dob2 = date(dob,"MDY")
+list dob dob2 in 1/10
+
+*ancak formatlamak gerekmekte
+*format date
+*data > data manager > select dob2 > format > click create > select daily > select format > ok > apply
+
+format %tdMon_DD,_CCYY dob2
+list dob dob2 in 1/10
+
+
+*SOME USEFUL FUNCTIONS FOR GENERATE OR REPLACE
+*Gözlemleri kırılma noktaları değerlerine göre gruplandırmak için 
+*recode ve autocode yerine eş büyüklükte gruplama yapmak için 
+*quartiles, quintile yada decile kullanılabilir. 
+
+*group(n) kodu n sayıda yaklaşık olarak eşbüyüklükte gruba bölmeyi sağlar
+*Nihai değişken 1...n'e kadar değerler alır bu durumda 
+
+*inlist
+help inlist
+/*Function
+
+    inlist(z,a,b,...)
+       Description:  1 if z is a member of the remaining arguments; otherwise, 0
+         
+                     All arguments must be reals or all must be strings.  The number of arguments is between 2 and 255 for reals and between 2 and 10 for strings.
+       Domain:       all reals or all strings
+       Range:        0 or 1
+*/
+
+*inrange 
+help inrange
+/*
+Function
+
+    inrange(z,a,b)
+       Description:  1 if it is known that a < z < b; otherwise, 0
+        
+                     The following ordered rules apply:
+                     z > . returns 0.
+                     a > . and b = . returns 1.
+                     a > . returns 1 if z < b; otherwise, it returns 0.
+                     b > . returns 1 if a < z; otherwise, it returns 0.
+                     Otherwise, 1 is returned if a < z < b.
+                     If the arguments are strings, "." is interpreted as "".
+       Domain:       all reals or all strings
+       Range:        0 or 1
+*/
+
+
+*sum fonksiyonu
+* zaman serisinde akım değişkeni stoğa dönüştürmede kullanışlı
+
+*EGEN KOMUTU
+help egen 
+use census2c, clear
+egen nrCensus=rowmean(pop*)
+*genelde kullanılan count(), mean(), min(), max(), total()
+*iqr(interquartile range), kurt (kurtosis), mad(median absolute deviation)
+*median(), mod(), sd(standart deviation), skew(skewness), std(z-score)
+*record ise rekor en yüksek değeri gösteriyo 
+egen hiwage=record(wage), by(empid) order(year)
+*kod herbir çalışan için bu zaman kadar aldığı en yüksek geliri hesaplamakta
+*diğer bir komut egenmore 
+ssc install egenmore, replace
+
+
+*Computation for by-groups
+use http://www.stata-press.com/data/imeus/census2d, clear
+gsort region -pop ,
+*nüfusa göre azalan sırada bölgeleri sıraladık
+by region: generate totpop=sum(pop)
+*bölgelere göre ayırıp nüfusu kümülatif toplam şeklinde yapar
+*yani en büyük şehir sonra en büyük 2 ....toplayarak gider
+
+list region state pop totpop, sepby(region)
+
+by region: list region totpop if _n==_N
+*bölgelere göre son gözlemleri gösterdi...
+
+*bölgelerin toplam nüfusunu egen komutunda total() kullanarak bulabiliriz
+by region: egen totpop2=total(pop)
+
+*bölgelere göre nüfus ortalaması için
+by region: egen meanpop=mean(pop)
+
+
+*bunu birden fazla değişkenle de yapabiliriz
+*bu sefer hem bölge hem de popsizeı dikkate aldı
+by region popsize, sort: egen meanpop2=mean(pop)
+list region popsize state meanpop2, sepby(region)
+
+*center fonksiyonu by group opsiyonuyla çalışmakta ve
+*verilerin ortalamadan fark serielerini oluşturmaktadır. 
+*örnek
+/*
+help center
+sysuse auto
+center mpg price weight
+center mpg price weight, prefix(z_) standardize
+bysort rep78: center mpg price weight, replace
+center mpg, generate(mpg0)
+*/
+* collapse -- Make dataset of summary statistics
+*Syntax
+*collapse clist [if] [in] [weight] [, options]
+*örnek
+*webuse college
+*describe
+*list 
+*Create dataset containing the 25th percentile of gpa for each year
+*collapse (p25) gpa [fw=number], by(year)
+*List the result
+*list
+
+*2.örnek
+*webuse college, clear
+*Create dataset containing the mean and median of gpa and hour for each year, and store median of gpa and hour in medgpa and medhour, respectively
+*collapse (mean) gpa hour (median) medgpa=gpa medhour=hour [fw=number], by(year)
+*List the result
+*list
+
+*baum s.46 pooled cross sectional time series  data
+*örnek olarak 1998-2004 arasında abd eyalaetlerinin rassal bir örneklemine ilişkin yıllık verilere sahip olalım 
+collapse (mean) income (median) medinc=income sum(population), by(year)
+*yeni bir veri seti yaratıyo 
+*burada yıl, ortalama gelir, gelir, medyan gelir, ve örneklem dönemindeki eyalaetlerin toplam nüfusundan oluşan 
+*her bir yıla 1 gözlem düşen yeni bir veri seti oluşturuyo
+
+/*
+webuse grunfeld
+
+
+
+. collapse (mean) invest (median) medinv=invest (sum) kstock, by(year)
+
+. 
+*/
+
+		
+*statada komut;
+*cmdname varlist [if] [in] [, options]
+*stata komutları; 
+*(i) e-class komutlar (estimation ommands)
+*(ii) r-class komutlar (all otjer analysis commands
+*Return values
+*bu komutların sonuçlarının tümüne r() veya e() komutuyla ulaşıyoruz.
+*r() return list ile de ulaşılabilir. 
+use http://www.stata-press.com/data/imeus/census2c, clear
+sum pop
+return list
+
+*estimation komutu kullanıyorsak 
+*bu sefer ereturn list
+mean pop popurb
+ereturn list 
+matrix list e(b)
+matrix list e(V)
+/*
+*LOCAL MACRO AND LOOP(FORVALUES - FOREACH)
+use gdp4cty, clear
+local country US UK DE FR
+local ctycode 111 112 136 134
+display "'country'"
+display "'ctycode'"
+
+local cc 1
+foreach c of local country {
+	generate double `c'gdp = gdp`cc'
+	local ++cc
+	}
+*	
+	foreach c in US UK DE FR  {
+	generate double lngdp`c' = log(`c'gdp)
+	summarize lngdp`c' 
+}
+*
+*LOOPING OVER VARIABLES: forvalues and foreeach 
+/*
+for values i=1/4 {
+		generate double lngdp'i'=log(gdp'i')
+	summarize lngdp'i'
+		}
